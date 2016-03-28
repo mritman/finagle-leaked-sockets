@@ -5,6 +5,7 @@ import com.twitter.finagle.Service;
 import com.twitter.finagle.http.Request;
 import com.twitter.finagle.http.RequestBuilder;
 import com.twitter.finagle.http.Response;
+import com.twitter.io.Reader$;
 import com.twitter.util.Await;
 import com.twitter.util.Duration;
 import org.apache.coyote.AbstractProtocol;
@@ -44,11 +45,17 @@ public class Application {
                 continue;
             }
 
-            logger.info("{}: HTTP status code: {}. Headers: {}. Response: {}.",
-                        requestCounter++,
-                        response.getStatusCode(),
-                        response.getHttpResponse().headers().entries(),
-                        response.getContentString());
+            try {
+                logger.info("{}: HTTP status code: {}. Headers: {}. Response: {}.",
+                            requestCounter++,
+                            response.getStatusCode(),
+                            response.getHttpResponse().headers().entries(),
+                            Await.result(Reader$.MODULE$.readAll(response.reader()), Duration.fromMilliseconds(20)));
+            } catch (Exception exc) {
+
+            }
+
+            response.read().discard();
         }
     }
 
